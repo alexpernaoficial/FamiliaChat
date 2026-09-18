@@ -1,0 +1,18 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /families/{familyId}/media/{fileName} {
+      // Só membros da família (checado no Firestore) leem e enviam mídia.
+      // Limite de 15MB por arquivo (proteção extra, mesmo já comprimindo no app).
+      allow read: if request.auth != null
+        && request.auth.uid in firestore.get(/databases/(default)/documents/families/$(familyId)).data.members;
+
+      allow write: if request.auth != null
+        && request.auth.uid in firestore.get(/databases/(default)/documents/families/$(familyId)).data.members
+        && request.resource.size < 15 * 1024 * 1024;
+
+      allow delete: if false;
+    }
+  }
+}
